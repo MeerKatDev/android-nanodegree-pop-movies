@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">PopularMovies</string>
+    <string name="highest_rated">Highest rated</string>
+    <string name="most_popular">Most popular</string>
+    <string name="error_message">Error occurred!</string>
+    <string name="release_date">Release date:</string>
+    <string name="movie_title">Original title:</string>
+    <string name="plot_synopsis">Plot synopsis:</string>
+    <string name="vote_average">Average vote:</string>
+    <string name="popularity">Popularity:</string>
+</resources>
