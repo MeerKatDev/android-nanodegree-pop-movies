@@ -4,14 +4,11 @@ import org.meerkatdev.popularmovies.adapters.MovieAdapter;
 import org.meerkatdev.popularmovies.data.AppDatabase;
 import org.meerkatdev.popularmovies.data.models.Movie;
 import org.meerkatdev.popularmovies.utils.*;
-import org.meerkatdev.popularmovies.viewmodels.MovieViewModel;
 
 import java.net.URL;
 import java.util.Arrays;
-import java.util.List;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,28 +20,8 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
-/** Rubric https://review.udacity.com/#!/rubrics/2021/view
- * OK - Movie Details layout contains a section for displaying trailer videos and user reviews.
- * OK - When a user changes the sort criteria (most popular, highest rated, and favorites) the main view gets updated correctly.
- * OK - When a trailer is selected, app uses an Intent to launch the trailer. (to Youtube app ?)
- * OK - In the movies detail screen, a user can tap a button (for example, a star) to mark it as a Favorite.
- *   Tap the button on a favorite movie will unfavorite it.
- * OK - App requests for related videos for a selected movie via the /movie/{id}/videos
- *   endpoint in a background thread and displays those details when the user selects a movie.
- * OK - Database is not re-queried unnecessarily. LiveData is used to observe changes in the database and update the UI accordingly.
- * OK - Database is not re-queried unnecessarily after rotation. Cached LiveData from ViewModel is used instead.
- * ---- advanced ---
- * OK - Extend the favorites database to store the movie poster, synopsis, user rating, and release date, and display them even when offline.
- * - Implement sharing functionality to allow the user to share the first trailer’s YouTube URL from the movie details screen.
- *
- * create a DAO only for the screens
- * movieScreenDAO - only the ones showing
- * movieDAO - the ones cached (?) or does Okhttp take care of it?
- * implement the caching system for everything
- * set the layout for movies well (not one movie in the middle left)
- * implement sharing
- */
 public class MainActivity extends AppCompatActivity implements ListItemClickListener {
 
     private RecyclerView recyclerView;
@@ -59,17 +36,10 @@ public class MainActivity extends AppCompatActivity implements ListItemClickList
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        loadMovieData("popular");
         setupViewModel();
         setupGridView();
         mDb = AppDatabase.getInstance(this);
-    }
-
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        Log.d(TAG, "RESUMING");
+        loadMovieData("popular");
     }
 
     @Override
@@ -100,8 +70,9 @@ public class MainActivity extends AppCompatActivity implements ListItemClickList
     }
 
     private void loadMovieData(String criterion) {
-        new FetchMovieTask().execute(criterion);
-
+        AppExecutors.getInstance().networkIO().execute(() ->
+            new FetchMovieTask().execute(criterion)
+        );
     }
 
     private void loadFavoriteMovies() {
@@ -116,6 +87,10 @@ public class MainActivity extends AppCompatActivity implements ListItemClickList
             Log.d(TAG, "Updating list of tasks from LiveData in ViewModel");
             movieAdapter.setMovieData(elements);
         });
+    }
+
+    private void alertOffline() {
+        Toast.makeText(this, "The phone is offline", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -133,40 +108,6 @@ public class MainActivity extends AppCompatActivity implements ListItemClickList
         startActivity(intent);
     }
 
-    public class FetchMovieTask extends AsyncTask<String, Void, Movie[]> {
-
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
-
-        @Override
-        protected Movie[] doInBackground(String... params) {
-            if (params.length == 0) return null;
-
-            URL movieRequestUrl = NetworkUtils.buildMovieRequestUrl(params[0]);
-            Log.d(TAG, "Querying " + movieRequestUrl.toString());
-            try {
-                String jsonResponse = NetworkUtils.getResponseFromHttpUrl(movieRequestUrl);
-                return JSONUtils.getMovies(jsonResponse);
-            } catch (Exception e) {
-                LogUtils.handleException(TAG, e);
-                return null;
-            }
-        }
-
-        @Override
-        protected void onPostExecute(Movie[] movies) {
-            if(movies==null) return;
-            movieAdapter.setMovieData(Arrays.asList(movies));
-            AppExecutors.getInstance().diskIO().execute(() -> {
-                mDb.movieDao().insertAll(movies);
-            });
-            super.onPostExecute(movies);
-
-        }
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -188,6 +129,44 @@ public class MainActivity extends AppCompatActivity implements ListItemClickList
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
+        }
+    }
+
+    public class FetchMovieTask extends AsyncTask<String, Void, Movie[]> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected Movie[] doInBackground(String... params) {
+            if (params.length == 0) return null;
+
+            // OkHTTP caches the request by asking the server every time
+            // if the content changed. No need to cache data manually.
+            URL movieRequestUrl = NetworkUtils.buildMovieRequestUrl(params[0]);
+            try {
+                String jsonResponse = NetworkUtils.getResponseFromHttpUrl(movieRequestUrl);
+                return JSONUtils.getMovies(jsonResponse);
+            } catch (java.net.UnknownHostException offline) {
+                AppExecutors.getInstance().mainThread().execute(MainActivity.this::alertOffline);
+
+            } catch (Exception e) {
+                LogUtils.handleException(TAG, e);
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Movie[] movies) {
+            if(movies==null) return;
+            movieAdapter.setMovieData(Arrays.asList(movies));
+            AppExecutors.getInstance().diskIO().execute(() -> {
+                mDb.movieDao().insertAll(movies);
+            });
+            super.onPostExecute(movies);
+
         }
     }
 }

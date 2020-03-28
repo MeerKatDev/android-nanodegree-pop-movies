@@ -26,7 +26,7 @@ public class NetworkUtils {
     /**
      * The API KEY GOES HERE
      */
-    private static final String API_KEY = "8d96c675fc882603db962b0152fd5ef7";
+    private static final String API_KEY = "";
 
     /**
      * Builds the URL used to query a generic API in the Movie DB,

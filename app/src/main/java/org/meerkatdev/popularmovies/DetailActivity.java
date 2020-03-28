@@ -105,7 +105,10 @@ public class DetailActivity extends AppCompatActivity implements DetailsListItem
 
     private void loadMovieSubData(AsyncTask asyncTask, String movieId, String object) {
         Log.d(TAG, "Starting AsyncTask");
-        asyncTask.execute(movieId, object);
+
+        AppExecutors.getInstance().networkIO().execute(() ->
+                asyncTask.execute(movieId, object)
+        );
     }
 
 

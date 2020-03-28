@@ -1,4 +1,4 @@
-package org.meerkatdev.popularmovies.viewmodels;
+package org.meerkatdev.popularmovies;
 
 import android.app.Application;
 import android.util.Log;
