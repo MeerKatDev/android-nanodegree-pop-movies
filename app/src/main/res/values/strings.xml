@@ -1,4 +1,4 @@
-<resources>
+<resources >
     <string name="app_name">PopularMovies</string>
     <string name="highest_rated">Highest rated</string>
     <string name="most_popular">Most popular</string>
@@ -6,6 +6,11 @@
     <string name="release_date">Release date:</string>
     <string name="movie_title">Original title:</string>
     <string name="plot_synopsis">Plot synopsis:</string>
-    <string name="vote_average">Average vote:</string>
-    <string name="popularity">Popularity:</string>
+    <string name="vote_average">Vote</string>
+    <string name="popularity">Popularity</string>
+    <string name="favourites">Favourites</string>
+    <string name="review_author" translatable="false">Review author</string>
+    <string name="review_content" translatable="false">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</string>
+    <string name="review_url" translatable="false">https://udacity.com</string>
+    <string name="nothing_to_see">"Nothing to see here"</string>
 </resources>

@@ -1,26 +1,32 @@
 package org.meerkatdev.popularmovies.utils;
 
 import android.net.Uri;
+import android.util.Log;
+
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.RequestCreator;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Scanner;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class NetworkUtils {
 
     private static final String MOVIE_DB_BASE_URL = "https://api.themoviedb.org/3";
     private static final String MOVIE_DB_POSTERS_BASE_PATH = "https://image.tmdb.org/t/p/";
+    private static final String YOUTUBE_IMG_BASE_URL = "https://img.youtube.com/vi/";
     private static final String THUMBNAILS_DIMENSION = "w342";
     private static final String API_KEY_PARAM = "api_key";
+    private static OkHttpClient client = new OkHttpClient();
+
 
     /**
      * The API KEY GOES HERE
      */
-    private static final String API_KEY = "";
+    private static final String API_KEY = "8d96c675fc882603db962b0152fd5ef7";
 
     /**
      * Builds the URL used to query a generic API in the Movie DB,
@@ -28,10 +34,28 @@ public class NetworkUtils {
      *
      * @return The URL built to be immediately sent in a request
      */
-    public static URL buildGenericRequestUrl(String path) {
+    public static URL buildMovieRequestUrl(String path) {
         String requestUri = Uri.parse(MOVIE_DB_BASE_URL).buildUpon()
                 .appendPath("movie")
                 .appendPath(path)
+                .appendQueryParameter(API_KEY_PARAM, API_KEY)
+                .build().toString();
+        URL url = null;
+
+        try {
+            url = new URL(requestUri);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+
+        return url;
+    }
+
+    public static URL buildMovieRequestUrl(String id, String subObject) {
+        String requestUri = Uri.parse(MOVIE_DB_BASE_URL).buildUpon()
+                .appendPath("movie")
+                .appendPath(id)
+                .appendPath(subObject)
                 .appendQueryParameter(API_KEY_PARAM, API_KEY)
                 .build().toString();
         URL url = null;
@@ -53,6 +77,16 @@ public class NetworkUtils {
         return Picasso.get().load(imageUri);
     }
 
+    public static RequestCreator loadYoutubeThumbnail(String key) {
+        String imageUri = Uri.parse(YOUTUBE_IMG_BASE_URL).buildUpon()
+                .appendPath(key)
+                .appendPath("0.jpg")
+                .build().toString();
+        Log.d("Network", "querying:" + imageUri);
+        return Picasso.get().load(imageUri);
+    }
+
+
     /**
      * This method returns the entire result from the HTTP response.
      *
@@ -61,21 +95,12 @@ public class NetworkUtils {
      * @throws IOException Related to network and stream reading
      */
     public static String getResponseFromHttpUrl(URL url) throws IOException {
-        HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-        try {
-            InputStream in = urlConnection.getInputStream();
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
 
-            Scanner scanner = new Scanner(in);
-            scanner.useDelimiter("\\A");
-
-            boolean hasInput = scanner.hasNext();
-            if (hasInput) {
-                return scanner.next();
-            } else {
-                return null;
-            }
-        } finally {
-            urlConnection.disconnect();
+        try (Response response = client.newCall(request).execute()) {
+            return response.body().string();
         }
     }
 

@@ -7,13 +7,9 @@ import java.io.IOException;
 
 public class LogUtils {
 
-    public static void handleIOException(String tag, IOException e) {
+    public static void handleException(String tag, Exception e) {
+        String exceptionName = e.getClass().getSimpleName();
         e.printStackTrace();
-        Log.d(tag, "Exception while doing IO: " + e.getMessage());
-    }
-
-    public static void handleJsonException(String tag, JSONException e) {
-        e.printStackTrace();
-        Log.d(tag, "Exception while parsing JSON: " + e.getMessage());
+        Log.d(tag, "Exception " + "[" + exceptionName + "]" + e.getMessage());
     }
 }
