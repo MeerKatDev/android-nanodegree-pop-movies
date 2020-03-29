@@ -23,22 +23,23 @@ public class Movie {
     public double voteAverage;
     public double popularity;
     public boolean favourite;
+    public boolean showing;
     public int movieId;
 
     public Movie(int id, String originalTitle, String overview, double voteAverage, String posterPath,
-                 String releaseDate, double popularity, int movieId, boolean favourite) {
+                 String releaseDate, double popularity, int movieId, boolean favourite, boolean showing) {
         this.id = id;
-        commonConstructor(originalTitle, overview, voteAverage, posterPath, releaseDate, popularity, movieId, favourite);
+        commonConstructor(originalTitle, overview, voteAverage, posterPath, releaseDate, popularity, movieId, favourite, showing);
     }
 
     @Ignore
     public Movie(String originalTitle, String overview, double voteAverage, String posterPath,
-                  String releaseDate, double popularity, int movieId, boolean favourite) {
-        commonConstructor(originalTitle, overview, voteAverage, posterPath, releaseDate, popularity, movieId, favourite);
+                  String releaseDate, double popularity, int movieId, boolean favourite, boolean showing) {
+        commonConstructor(originalTitle, overview, voteAverage, posterPath, releaseDate, popularity, movieId, favourite, showing);
     }
 
     private void commonConstructor(String _originalTitle, String _overview, double _voteAverage, String _posterPath,
-                                   String _releaseDate, double _popularity, int _movieId, boolean _favourite) {
+                                   String _releaseDate, double _popularity, int _movieId, boolean _favourite, boolean _showing) {
         this.originalTitle   = _originalTitle;
         this.overview        = _overview;
         this.voteAverage     = _voteAverage;
@@ -47,9 +48,11 @@ public class Movie {
         this.popularity      = _popularity;
         this.favourite       = _favourite;
         this.movieId         = _movieId;
+        this.showing         = _showing;
     }
 
-    public static Movie buildMovieFromJson(JSONObject jsonMovie) throws JSONException, ParseException {
+    // used only when taking from the API
+    public static Movie buildMovieFromJson(JSONObject jsonMovie) throws JSONException {
         String originalTitle = jsonMovie.getString("original_title");
         String posterPath    = jsonMovie.getString("poster_path");
         String releaseDate   = jsonMovie.getString("release_date");
@@ -58,8 +61,8 @@ public class Movie {
         double popularity    = jsonMovie.getDouble("popularity");
         double voteAverage   = jsonMovie.getDouble("vote_average");
         int movieId          = jsonMovie.getInt("id");
-        // TODO check if the movie is already in the favorites
-        return new Movie(originalTitle, overview, voteAverage, posterPath, releaseDate, popularity, movieId, false);
+
+        return new Movie(originalTitle, overview, voteAverage, posterPath, releaseDate, popularity, movieId, false, true);
     }
 
 }

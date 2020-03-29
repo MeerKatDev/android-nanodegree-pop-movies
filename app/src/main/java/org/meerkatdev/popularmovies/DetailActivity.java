@@ -6,7 +6,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.ActivityNotFoundException;
-import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -74,7 +73,7 @@ public class DetailActivity extends AppCompatActivity implements DetailsListItem
         favHeart.setOnClickListener(thisView ->
             AppExecutors.getInstance().diskIO().execute(() -> {
                 isFavorite = !isFavorite;
-                Log.d(TAG, "setting fav" + isFavorite);
+                Log.d(TAG, "setting favourite " + isFavorite);
                 mDb.movieDao().setFavorite(movieId, isFavorite);
                 setFavoriteBackground(favHeart);
             })

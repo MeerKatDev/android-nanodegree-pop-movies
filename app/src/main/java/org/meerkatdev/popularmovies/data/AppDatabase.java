@@ -13,7 +13,7 @@ import org.meerkatdev.popularmovies.data.converters.*;
 import org.meerkatdev.popularmovies.data.daos.*;
 import org.meerkatdev.popularmovies.data.models.*;
 
-@Database(entities = {Movie.class, MovieRelatedVideo.class, MovieReview.class}, version = 2, exportSchema = false)
+@Database(entities = {Movie.class, MovieRelatedVideo.class, MovieReview.class}, version = 3, exportSchema = false)
 @TypeConverters({DateConverters.class, VideoTypes.class})
 public abstract class AppDatabase extends RoomDatabase {
 

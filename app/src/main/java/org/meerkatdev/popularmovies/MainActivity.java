@@ -7,8 +7,11 @@ import org.meerkatdev.popularmovies.utils.*;
 
 import java.net.URL;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -16,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
@@ -28,8 +32,12 @@ public class MainActivity extends AppCompatActivity implements ListItemClickList
     private MovieAdapter movieAdapter;
     private AppDatabase mDb;
     MovieViewModel movieViewModel;
+    GridLayoutManager glm;
+    Parcelable mListState;
+    //boolean favoritesPicked = false;
 
     private final static String TAG = MainActivity.class.getSimpleName();
+    private final static String LIST_STATE_KEY = "list-state-key";
     private int imageWidth = 342;
 
     @Override
@@ -40,12 +48,40 @@ public class MainActivity extends AppCompatActivity implements ListItemClickList
         setupGridView();
         mDb = AppDatabase.getInstance(this);
         loadMovieData("popular");
+        Log.d(TAG, "Creating activity");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "Resuming activity");
+        if (mListState != null) {
+            glm.onRestoreInstanceState(mListState);
+        }
+    }
+
+    protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+
+        // Save list state
+        mListState = glm.onSaveInstanceState();
+        state.putParcelable(LIST_STATE_KEY, mListState);
+    }
+
+    protected void onRestoreInstanceState(Bundle state) {
+        super.onRestoreInstanceState(state);
+
+        // Retrieve list state and list/item positions
+        if(state != null)
+            mListState = state.getParcelable(LIST_STATE_KEY);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        AppExecutors.getInstance().diskIO().execute(() -> mDb.movieDao().purgeNonFavorites());
+        AppExecutors.getInstance().diskIO().execute(() ->
+                mDb.movieDao().purgeNonFavorites()
+        );
     }
 
     /** Here you can dynamically calculate the number of columns
@@ -62,7 +98,7 @@ public class MainActivity extends AppCompatActivity implements ListItemClickList
 
     private void setupGridView() {
         recyclerView = findViewById(R.id.rv_movies);
-        GridLayoutManager glm = new GridLayoutManager(this, numberOfColumns());
+        glm = new GridLayoutManager(this, numberOfColumns());
         recyclerView.setLayoutManager(glm);
         recyclerView.setHasFixedSize(true);
         movieAdapter = new MovieAdapter(0, this);
@@ -78,13 +114,18 @@ public class MainActivity extends AppCompatActivity implements ListItemClickList
     private void loadFavoriteMovies() {
         AppExecutors.getInstance().diskIO().execute(() -> {
             mDb.movieDao().purgeNonFavorites();
+            mDb.movieDao().showAllFavorites();
         });
     }
 
     private void setupViewModel() {
         movieViewModel = ViewModelProviders.of(this).get(MovieViewModel.class);
         movieViewModel.getMovies().observe(this, elements -> {
-            Log.d(TAG, "Updating list of tasks from LiveData in ViewModel");
+            Log.d(TAG, "Updating list of movies from LiveData in ViewModel");
+            movieAdapter.setMovieData(elements);
+        });
+        movieViewModel.getFavoriteMovies().observe(this, elements -> {
+            Log.d(TAG, "Updating list of favorite movies from LiveData in ViewModel");
             movieAdapter.setMovieData(elements);
         });
     }
@@ -161,9 +202,11 @@ public class MainActivity extends AppCompatActivity implements ListItemClickList
         @Override
         protected void onPostExecute(Movie[] movies) {
             if(movies==null) return;
-            movieAdapter.setMovieData(Arrays.asList(movies));
+            List<Movie> movieList = Arrays.asList(movies);
+            movieAdapter.setMovieData(movieList);
+            Integer[] movieIds = movieList.stream().map(a -> a.movieId).toArray(Integer[]::new);
             AppExecutors.getInstance().diskIO().execute(() -> {
-                mDb.movieDao().insertAll(movies);
+                mDb.movieDao().insertAndDeleteInTransaction(movieIds, movies);
             });
             super.onPostExecute(movies);
 

@@ -16,16 +16,21 @@ public class MovieViewModel extends AndroidViewModel {
     private static final String TAG = MovieViewModel.class.getSimpleName();
 
     private LiveData<List<Movie>> movies;
+    private LiveData<List<Movie>> favoriteMovies;
     private AppDatabase database;
     public MovieViewModel(Application application) {
         super(application);
         database = AppDatabase.getInstance(this.getApplication());
         Log.d(TAG, "Retrieving the movies from the database");
         movies = database.movieDao().loadAll();
+        favoriteMovies = database.movieDao().loadLiveFavorites();
     }
 
     public LiveData<List<Movie>> getMovies() {
         return movies;
+    }
+    public LiveData<List<Movie>> getFavoriteMovies() {
+        return favoriteMovies;
     }
 
 }
